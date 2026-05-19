@@ -4,10 +4,19 @@ Containerized pipeline that extracts audio from video files, transcribes with `f
 
 ## Features
 * **NVIDIA CUDA acceleration** — `large-v3` Whisper model, `float16` precision.
-* **Smart skip logic** — if a transcript for the input already exists in `/output`, the GPU step is bypassed and only summarization runs.
+* **Three artifacts per run** — verbatim transcript, publishable clean-read version, and summary.
+* **Smart skip logic** — each stage skips if its output already exists, so re-runs are cheap.
 * **Dual LLM backends** — local Ollama by default, OpenRouter when `OPENROUTER_API_KEY` is set.
 * **Isolated I/O** — `/input` and `/output` are mounted from the repo root.
 * **Real-time console streaming** — unbuffered stdout so transcription progress prints live.
+
+A single invocation produces, for input `meeting.mkv`:
+
+| File | Contents |
+| --- | --- |
+| `output/meeting.txt` | Verbatim transcript with `[start -> end]` timestamps per line. |
+| `output/meeting_publishable.txt` | Clean-read version: filler/disfluency removed, grammar fixed, paragraphs added — but speaker voice, vocabulary, and meaning preserved. |
+| `output/meeting_summary.txt` | Concise summary + bulleted takeaways. |
 
 ---
 
@@ -17,8 +26,10 @@ Containerized pipeline that extracts audio from video files, transcribes with `f
 | --- | --- |
 | [Dockerfile](Dockerfile) | CUDA + Python image, installs deps from `requirements.txt`. |
 | [requirements.txt](requirements.txt) | Pinned versions of `faster-whisper` and `requests`. |
-| [transcribe.py](transcribe.py) | Entry point — runs Whisper, then calls `summarize_transcript`. |
+| [transcribe.py](transcribe.py) | Entry point — runs Whisper, then publish + summarize. |
+| [publish.py](publish.py) | Cleans the verbatim transcript into a publishable, fidelity-preserving read. |
 | [summarize.py](summarize.py) | Posts the transcript to Ollama or OpenRouter and writes `_summary.txt`. |
+| [llm_client.py](llm_client.py) | Shared OpenRouter/Ollama dispatcher used by both publish and summarize. |
 
 ---
 
@@ -104,4 +115,21 @@ transcribe-video "/input/meeting.mkv"
 
 Outputs:
 * `output/meeting.txt` — full transcript with timestamps
+* `output/meeting_publishable.txt` — clean-read version, faithful to the speaker's voice
 * `output/meeting_summary.txt` — concise summary + bulleted takeaways
+
+---
+
+## 6. The Publishable Transcript
+
+`publish.py` strips timestamps from the verbatim transcript and asks the LLM to clean it up under strict fidelity rules. See [publish.py](publish.py) for the full prompt; the rules in summary:
+
+**Removes:** filler ("um", "uh"), false starts, repeated stutter words, raw timestamps. Adds natural punctuation and paragraph breaks.
+
+**Preserves:** vocabulary, idioms, colloquialisms, sentence rhythm, contractions, asides, anecdotes, opinions — anything that's part of the speaker's voice.
+
+**Never:** paraphrases, rewrites for style, adds content, removes substantive content, or changes meaning.
+
+If the clean-read output doesn't match what you want, edit [publish.py](publish.py) `PROMPT_TEMPLATE` — the rules are explicit and tuneable. Re-running on the same input is free because the stage skips if `_publishable.txt` already exists; delete that file to regenerate.
+
+> ⚠️ **Long transcripts + local Ollama:** Ollama defaults to a small context window (often 2048 or 4096 tokens). A long talk may be silently truncated. For full-length transcripts, prefer the OpenRouter backend (Claude Haiku 4.5 has a 200k context) or set `OLLAMA_NUM_CTX` on the host's Ollama config.

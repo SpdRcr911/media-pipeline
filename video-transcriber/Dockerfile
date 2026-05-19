@@ -15,6 +15,6 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip3 install --no-cache-dir -r requirements.txt
 
-COPY transcribe.py summarize.py ./
+COPY transcribe.py summarize.py publish.py llm_client.py ./
 
 ENTRYPOINT ["python", "transcribe.py"]

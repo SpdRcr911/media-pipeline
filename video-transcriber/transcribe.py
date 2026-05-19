@@ -3,6 +3,7 @@ import sys
 
 from faster_whisper import WhisperModel
 
+from publish import publish_transcript
 from summarize import summarize_transcript
 
 
@@ -48,7 +49,9 @@ def main() -> int:
         return 1
 
     output_file = transcribe(input_file)
-    return 0 if summarize_transcript(output_file) else 1
+    publish_ok = publish_transcript(output_file)
+    summary_ok = summarize_transcript(output_file)
+    return 0 if (publish_ok and summary_ok) else 1
 
 
 if __name__ == "__main__":

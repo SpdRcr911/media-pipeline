@@ -16,10 +16,12 @@ media-pipeline/
 │   ├── Dockerfile
 │   ├── convert_cookies.py
 │   └── README.md
-└── video-transcriber/      <-- GPU transcription + LLM summarization container
+└── video-transcriber/      <-- GPU transcription + LLM cleanup + summarization
     ├── Dockerfile
-    ├── transcribe.py
-    ├── summarize.py
+    ├── transcribe.py       <-- entry point
+    ├── publish.py          <-- clean-read transcript generator
+    ├── summarize.py        <-- summary + takeaways generator
+    ├── llm_client.py       <-- shared OpenRouter/Ollama dispatcher
     ├── requirements.txt
     └── README.md
 ```
@@ -35,7 +37,10 @@ Fetches video assets using `yt-dlp`. Passes YouTube's modern JavaScript (EJS) bo
 * **Documentation:** [youtube-backup/README.md](youtube-backup/README.md).
 
 ### 2. Video Transcriber & Summarizer (`video-transcriber/`)
-Extracts audio from video containers, transcribes with `faster-whisper`, and post-processes the transcript with an LLM.
+Extracts audio from video containers, transcribes with `faster-whisper`, and post-processes into three artifacts per run:
+1. **Verbatim transcript** with timestamps — `{name}.txt`
+2. **Publishable clean-read** — `{name}_publishable.txt` (filler/disfluency removed, grammar fixed, speaker's voice and meaning preserved)
+3. **Summary + takeaways** — `{name}_summary.txt`
 * **LLM backends:** Local Ollama (default) or OpenRouter API (when `OPENROUTER_API_KEY` is set).
 * **Documentation:** [video-transcriber/README.md](video-transcriber/README.md).
 

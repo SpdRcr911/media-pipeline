@@ -12,7 +12,7 @@ Containerized `yt-dlp` setup that downloads YouTube videos at the highest availa
 
 | File | Purpose |
 | --- | --- |
-| [Dockerfile](Dockerfile) | Python slim base, installs `ffmpeg`, `nodejs`, and pinned `yt-dlp[default]`. |
+| [Dockerfile](Dockerfile) | Python slim base, installs `ffmpeg`, `nodejs`, pinned `yt-dlp[default]`, and the `yt-dlp-ejs` challenge-solver distribution. |
 | [convert_cookies.py](convert_cookies.py) | Converts a raw browser `cookie:` header into a Netscape-format `cookies.txt`. Reads from stdin/env var — never edit the source to paste in cookies. |
 
 ---

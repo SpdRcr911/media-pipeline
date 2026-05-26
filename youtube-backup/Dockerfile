@@ -6,7 +6,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     nodejs \
     && rm -rf /var/lib/apt/lists/*
 
-RUN pip install --no-cache-dir "yt-dlp[default]==2025.1.26"
+RUN pip install --no-cache-dir "yt-dlp[default]==2026.3.17" "yt-dlp-ejs==0.8.0"
 
 WORKDIR /downloads
 
